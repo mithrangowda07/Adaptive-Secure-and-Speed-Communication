@@ -1,0 +1,98 @@
+import { useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import NetworkPanel from "../components/NetworkPanel";
+import ChatBox from "../components/ChatBox";
+import FileUpload from "../components/FileUpload";
+import socket from "../socket/socket";
+import { AuthContext } from "../context/AuthContext";
+import api from "../services/api";
+
+export default function ChatPage() {
+  const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [network, setNetwork] = useState({ mode: "normal", latency: 20, bandwidth: 30, packet_loss: 0.5 });
+  const [algorithm, setAlgorithm] = useState({ currentAlgorithm: "ECC", previousAlgorithm: "ECC" });
+  const receiver = user?.username === "device1" ? "device2" : "device1";
+
+  useEffect(() => {
+    if (!user) navigate("/");
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    api.get("/analytics").then(({ data }) => {
+      setMessages(data.rows || []);
+      if (data.currentAlgorithm) {
+        setAlgorithm((prev) => ({ ...prev, currentAlgorithm: data.currentAlgorithm }));
+      }
+    });
+    api.get("/network/state").then(({ data }) => setNetwork(data.state));
+  }, [user]);
+
+  useEffect(() => {
+    socket.on("receive_message", (payload) => {
+      setMessages((prev) => [payload, ...prev].slice(0, 200));
+    });
+    socket.on("network_update", (state) => setNetwork(state));
+    socket.on("algorithm_update", (state) => {
+      setAlgorithm(state);
+    });
+    return () => {
+      socket.off("receive_message");
+      socket.off("network_update");
+      socket.off("algorithm_update");
+    };
+  }, []);
+
+  function sendMessage() {
+    if (!message.trim()) return;
+    socket.emit("send_message", {
+      sender: user.username,
+      receiver,
+      message
+    });
+    setMessage("");
+  }
+
+  return (
+    <main className="min-h-screen p-4">
+      <Navbar user={user} onLogout={() => { logout(); navigate("/"); }} />
+      <div className="glass mb-4 rounded-2xl p-3 text-sm">
+        Current Network Quality:{" "}
+        <span className="font-semibold capitalize text-blue-300">{network.mode}</span>
+      </div>
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <aside className="lg:col-span-4 xl:col-span-3">
+          <NetworkPanel state={network} algorithm={algorithm} />
+        </aside>
+        <section className="lg:col-span-8 xl:col-span-9">
+          <ChatBox messages={messages} user={user} />
+          <div className="mt-4 flex items-center gap-3">
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder="Type secure message..."
+              className="flex-1 rounded-2xl border border-slate-700 bg-slate-900/85 p-4 text-base outline-none transition focus:border-blue-500"
+            />
+            <FileUpload receiver={receiver} onUploaded={(analytics) => setMessages((p) => [analytics, ...p])} />
+            <button
+              onClick={sendMessage}
+              className="rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold transition hover:bg-blue-500"
+            >
+              Send
+            </button>
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}
