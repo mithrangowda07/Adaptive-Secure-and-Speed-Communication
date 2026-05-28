@@ -62,6 +62,66 @@ SQLite file: `backend/database/communication.db`
 8. Persist complete analytics row in SQLite
 9. Broadcast `receive_message`, `analytics_update`, `network_update`, `algorithm_update` via Socket.IO
 
+## System Overview
+
+This project is a full-stack adaptive secure communication demo. It is built as two coordinated layers:
+
+- Backend: Node.js + Express.js server with Socket.IO for real-time updates.
+- Frontend: React app with Tailwind CSS, live socket events, message/file upload UI, and analytics graphs.
+
+### What the system is
+
+The system is an adaptive communication platform that dynamically changes cryptographic algorithms based on simulated network quality and security risk.
+
+It is designed to show how a secure messaging system can:
+
+- choose encryption methods based on latency, bandwidth, and packet loss,
+- simulate network transfer delays and packet tampering,
+- verify integrity with SHA-256 hashes,
+- rotate crypto keys every few messages,
+- calculate a security score for each transfer,
+- persist audit and analytic details in SQLite.
+
+### How the system is built
+
+- `backend/server.js` initializes Express, Socket.IO, and static upload handling.
+- `backend/routes/` defines REST endpoints for login, file upload, analytics, network state, simulation, and tamper/security controls.
+- `backend/controllers/` handle business logic for auth, message encryption/decryption, analytics persistence, and network/security simulation.
+- `backend/services/algorithmSelector.js` determines the active algorithm from the current QoS state.
+- `backend/utils/` contains integrity checks, key rotation, tamper injection, and security score calculations.
+- `frontend/src/pages/ChatPage.jsx` connects to the backend over Socket.IO and displays live data.
+- `frontend/src/components/` render the real-time network panel, algorithm decision card, security score, chat bubbles, and analytics charts.
+- Python scripts in `simulation/` provide additional simulated network mode examples, but the running backend uses `backend/network_state.json` and `backend/security_state.json`.
+
+### What is happening and how
+
+1. A logged-in user enters a message or uploads a file on the frontend.
+2. The frontend sends the payload to the backend via Socket.IO (`send_message`) or a file upload POST.
+3. The backend reads current network conditions from `backend/network_state.json` and security state from `backend/security_state.json`.
+4. Based on those conditions, the algorithm selector chooses one of:
+   - `ECC` for strong, low-latency networks,
+   - `AES + RSA` for moderate conditions,
+   - `AES` for poor or slow networks.
+5. The backend encrypts the payload, computes a SHA-256 hash, and optionally simulates tampering if tamper mode is armed.
+6. Transport delay is simulated by pausing execution according to the current latency value.
+7. The backend decrypts the payload if integrity passes, or marks it as failed if the hash is inconsistent.
+8. A detailed analytics record is built and saved in SQLite, including timings, network stats, algorithm reason, integrity status, and security score.
+9. Socket.IO broadcasts update events so the frontend immediately refreshes the chat view, analytics, network panel, algorithm state, and security score.
+
+### Live behavior in the frontend
+
+- The chat page shows current network quality, algorithm decision, security score, and any integrity warnings.
+- Messages appear in real time as the backend broadcasts `receive_message` events.
+- `NetworkPanel`, `SecurityScoreCard`, and `AlgorithmDecisionCard` visualize how the system adapts when simulations change.
+- The analytics page plots historical transfer metrics and lets users inspect completed communications.
+
+### Simulation and adaptive response
+
+- Network mode endpoints change the simulated QoS and emit updates to connected clients.
+- Security endpoints adjust CPU usage, attack risk, and threat signals to influence score and algorithm choice.
+- Tamper simulation forces one packet to fail integrity verification, illustrating how the system detects compromised content.
+- The backend's variation timers keep values changing briefly after a simulation endpoint is called, mimicking live network fluctuation.
+
 ## Network Simulation API
 
 - `POST /simulate/normal`
