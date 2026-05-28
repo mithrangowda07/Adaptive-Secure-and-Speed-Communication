@@ -31,13 +31,21 @@ db.exec(`
     bandwidth_mbps REAL NOT NULL,
     packet_loss_percent REAL NOT NULL,
     network_mode TEXT NOT NULL,
+    message_hash TEXT,
+    integrity_status TEXT,
+    key_id INTEGER DEFAULT 1,
+    security_score INTEGER DEFAULT 0,
+    risk_level TEXT DEFAULT 'MEDIUM RISK',
+    cpu_usage REAL DEFAULT 0,
+    attack_risk INTEGER DEFAULT 0,
+    algorithm_reason TEXT DEFAULT '',
     timestamp TEXT NOT NULL,
     date TEXT NOT NULL
   );
 `);
 
 const messageColumns = db.prepare("PRAGMA table_info(messages)").all().map((column) => column.name);
-if (!messageColumns.includes("total_processing_time_ms")) {
+if (!messageColumns.includes("algorithm_reason")) {
   db.exec("DROP TABLE IF EXISTS messages");
   db.exec(`
     CREATE TABLE messages (
@@ -56,11 +64,29 @@ if (!messageColumns.includes("total_processing_time_ms")) {
       bandwidth_mbps REAL NOT NULL,
       packet_loss_percent REAL NOT NULL,
       network_mode TEXT NOT NULL,
+      message_hash TEXT,
+      integrity_status TEXT,
+      key_id INTEGER DEFAULT 1,
+      security_score INTEGER DEFAULT 0,
+      risk_level TEXT DEFAULT 'MEDIUM RISK',
+      cpu_usage REAL DEFAULT 0,
+      attack_risk INTEGER DEFAULT 0,
+      algorithm_reason TEXT DEFAULT '',
       timestamp TEXT NOT NULL,
       date TEXT NOT NULL
     );
   `);
 }
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS encryption_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key_id INTEGER NOT NULL,
+    algorithm TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    rotation_reason TEXT NOT NULL
+  );
+`);
 
 const insertUser = db.prepare(
   "INSERT OR IGNORE INTO users (username, password) VALUES (?, ?)"

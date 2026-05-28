@@ -15,15 +15,18 @@ function deriveEccSessionKey() {
   return CryptoJS.enc.Hex.parse(sharedSecret.toString("hex"));
 }
 
-function encryptMessage(message, algorithm) {
+function encryptMessage(message, algorithm, cryptoContext = {}) {
+  const aesSecret = cryptoContext.aesKey || SHARED_SECRET;
+  const rsaKeyPair = cryptoContext.rsaKeyPair || RSA;
+
   if (algorithm === "AES") {
-    return CryptoJS.AES.encrypt(message, SHARED_SECRET).toString();
+    return CryptoJS.AES.encrypt(message, aesSecret).toString();
   }
 
   if (algorithm === "AES + RSA") {
-    const aesCipher = CryptoJS.AES.encrypt(message, SHARED_SECRET).toString();
+    const aesCipher = CryptoJS.AES.encrypt(message, aesSecret).toString();
     const encryptedKey = forge.util.encode64(
-      RSA.publicKey.encrypt(SHARED_SECRET, "RSAES-PKCS1-V1_5")
+      rsaKeyPair.publicKey.encrypt(aesSecret, "RSAES-PKCS1-V1_5")
     );
     return JSON.stringify({ aesCipher, encryptedKey });
   }
@@ -38,14 +41,17 @@ function encryptMessage(message, algorithm) {
   return JSON.stringify({ cipher, sessionKeyHex: sessionKey.toString(), ivHex: iv.toString() });
 }
 
-function decryptMessage(cipherText, algorithm) {
+function decryptMessage(cipherText, algorithm, cryptoContext = {}) {
+  const aesSecret = cryptoContext.aesKey || SHARED_SECRET;
+  const rsaKeyPair = cryptoContext.rsaKeyPair || RSA;
+
   if (algorithm === "AES") {
-    return CryptoJS.AES.decrypt(cipherText, SHARED_SECRET).toString(CryptoJS.enc.Utf8);
+    return CryptoJS.AES.decrypt(cipherText, aesSecret).toString(CryptoJS.enc.Utf8);
   }
 
   if (algorithm === "AES + RSA") {
     const parsed = JSON.parse(cipherText);
-    const decryptedKey = RSA.privateKey.decrypt(
+    const decryptedKey = rsaKeyPair.privateKey.decrypt(
       forge.util.decode64(parsed.encryptedKey),
       "RSAES-PKCS1-V1_5"
     );
@@ -62,13 +68,13 @@ function decryptMessage(cipherText, algorithm) {
   }).toString(CryptoJS.enc.Utf8);
 }
 
-function encryptBuffer(buffer, algorithm) {
+function encryptBuffer(buffer, algorithm, cryptoContext = {}) {
   const base = buffer.toString("base64");
-  return Buffer.from(encryptMessage(base, algorithm), "utf8");
+  return Buffer.from(encryptMessage(base, algorithm, cryptoContext), "utf8");
 }
 
-function decryptBuffer(buffer, algorithm) {
-  const base = decryptMessage(buffer.toString("utf8"), algorithm);
+function decryptBuffer(buffer, algorithm, cryptoContext = {}) {
+  const base = decryptMessage(buffer.toString("utf8"), algorithm, cryptoContext);
   return Buffer.from(base, "base64");
 }
 

@@ -1,0 +1,43 @@
+{
+  "level": "medium",
+  "riskLevel": "HIGH RISK",
+  "simulatedScore": 5,
+  "cpuUsage": 52.95,
+  "attackRisk": 1.52,
+  "integrityStatus": "VERIFIED",
+  "security_params": {
+    "cpuUsage": 52.95,
+    "attackRisk": 1.52,
+    "integrityPenalty": 1.07,
+    "anomalyScore": 49.04,
+    "authFailRate": 3.25,
+    "threatSignal": 58.15
+  },
+  "activeRanges": {
+    "cpu_usage": [
+      46,
+      70
+    ],
+    "attack_risk": [
+      0.8,
+      1.6
+    ],
+    "integrity_penalty": [
+      0.8,
+      1.8
+    ],
+    "anomaly_score": [
+      25,
+      55
+    ],
+    "auth_fail_rate": [
+      1,
+      4
+    ],
+    "threat_signal": [
+      20,
+      60
+    ]
+  },
+  "timestamp": "2026-05-28T14:20:53.020Z"
+}

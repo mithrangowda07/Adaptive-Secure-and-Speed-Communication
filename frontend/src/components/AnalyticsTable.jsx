@@ -8,6 +8,12 @@ export default function AnalyticsTable({ rows }) {
     { key: "transfer_time_ms", label: "Transfer Time (ms)" },
     { key: "network_mode", label: "Network Mode" },
     { key: "timestamp", label: "Timestamp" },
+    { key: "key_id", label: "Key ID" },
+    { key: "message_hash", label: "Message Hash" },
+    { key: "integrity_status", label: "Integrity Status" },
+    { key: "security_score", label: "Security Score" },
+    { key: "risk_level", label: "Risk Level" },
+    { key: "algorithm_reason", label: "Algorithm Reason" },
     { key: "decryption_time_ms", label: "Decryption Time (ms)" },
     { key: "latency_ms", label: "Latency (ms)" },
     { key: "bandwidth_mbps", label: "Bandwidth (Mbps)" },
@@ -21,7 +27,7 @@ export default function AnalyticsTable({ rows }) {
   return (
     <div className="glass overflow-hidden rounded-3xl p-0">
       <div className="max-h-[31rem] overflow-auto">
-        <table className="min-w-[1400px] text-sm text-slate-100">
+        <table className="min-w-[1900px] text-sm text-slate-100">
           <thead className="sticky top-0 z-20 bg-slate-900/95 text-blue-300">
             <tr>
               {columns.map((column) => (
@@ -47,6 +53,14 @@ export default function AnalyticsTable({ rows }) {
                 <td className="px-3 py-2">{r.transfer_time_ms}</td>
                 <td className="px-3 py-2 capitalize">{r.network_mode}</td>
                 <td className="whitespace-nowrap px-3 py-2">{r.timestamp}</td>
+                <td className="px-3 py-2">KEY-{r.key_id}</td>
+                <td className="max-w-[260px] truncate px-3 py-2" title={r.message_hash}>{r.message_hash || "-"}</td>
+                <td className={`px-3 py-2 font-semibold ${r.integrity_status === "FAILED" ? "text-red-400" : "text-emerald-400"}`}>
+                  {r.integrity_status || "VERIFIED"}
+                </td>
+                <td className="px-3 py-2">{r.security_score ?? "-"}</td>
+                <td className="px-3 py-2">{r.risk_level || "-"}</td>
+                <td className="max-w-[260px] truncate px-3 py-2" title={r.algorithm_reason}>{r.algorithm_reason || "-"}</td>
                 <td className="px-3 py-2">{r.decryption_time_ms}</td>
                 <td className="px-3 py-2">{r.latency_ms}</td>
                 <td className="px-3 py-2">{r.bandwidth_mbps}</td>

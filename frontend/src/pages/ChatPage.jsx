@@ -4,6 +4,8 @@ import Navbar from "../components/Navbar";
 import NetworkPanel from "../components/NetworkPanel";
 import ChatBox from "../components/ChatBox";
 import FileUpload from "../components/FileUpload";
+import SecurityScoreCard from "../components/SecurityScoreCard";
+import AlgorithmDecisionCard from "../components/AlgorithmDecisionCard";
 import socket from "../socket/socket";
 import { AuthContext } from "../context/AuthContext";
 import api from "../services/api";
@@ -13,8 +15,30 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [network, setNetwork] = useState({ mode: "normal", latency: 20, bandwidth: 30, packet_loss: 0.5 });
+  const [network, setNetwork] = useState({
+    mode: "normal",
+    latency: 20,
+    bandwidth: 30,
+    packet_loss: 0.5,
+    jitter: 5,
+    throughput: 25,
+    connection_stability: 90,
+    response_time: 40,
+    error_rate: 0.2,
+    qos_score: 80,
+    qos_status: "Good"
+  });
   const [algorithm, setAlgorithm] = useState({ currentAlgorithm: "ECC", previousAlgorithm: "ECC" });
+  const [security, setSecurity] = useState({
+    securityScore: 82,
+    riskLevel: "LOW RISK",
+    integrityStatus: "VERIFIED",
+    keyId: 1,
+    algorithmReason: "Good network and strong security",
+    performanceLevel: "GOOD",
+    securityParams: null
+  });
+  const [integrityAlert, setIntegrityAlert] = useState("");
   const receiver = user?.username === "device1" ? "device2" : "device1";
 
   useEffect(() => {
@@ -28,6 +52,17 @@ export default function ChatPage() {
       if (data.currentAlgorithm) {
         setAlgorithm((prev) => ({ ...prev, currentAlgorithm: data.currentAlgorithm }));
       }
+      if (data.rows?.length) {
+        const latest = data.rows[0];
+        setSecurity((prev) => ({
+          ...prev,
+          securityScore: latest.security_score || prev.securityScore,
+          riskLevel: latest.risk_level || prev.riskLevel,
+          integrityStatus: latest.integrity_status || prev.integrityStatus,
+          keyId: latest.key_id || prev.keyId,
+          algorithmReason: latest.algorithm_reason || prev.algorithmReason
+        }));
+      }
     });
     api.get("/network/state").then(({ data }) => setNetwork(data.state));
   }, [user]);
@@ -40,10 +75,21 @@ export default function ChatPage() {
     socket.on("algorithm_update", (state) => {
       setAlgorithm(state);
     });
+    socket.on("security_update", (payload) => setSecurity(payload));
+    socket.on("integrity_alert", (payload) => {
+      setIntegrityAlert(payload.message || "WARNING: Message Integrity Compromised");
+      setTimeout(() => setIntegrityAlert(""), 5000);
+    });
+    socket.on("key_rotation", (payload) => {
+      setSecurity((prev) => ({ ...prev, keyId: payload.keyId || prev.keyId }));
+    });
     return () => {
       socket.off("receive_message");
       socket.off("network_update");
       socket.off("algorithm_update");
+      socket.off("security_update");
+      socket.off("integrity_alert");
+      socket.off("key_rotation");
     };
   }, []);
 
@@ -67,8 +113,15 @@ export default function ChatPage() {
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <aside className="lg:col-span-4 xl:col-span-3">
           <NetworkPanel state={network} algorithm={algorithm} />
+          <SecurityScoreCard security={security} />
+          <AlgorithmDecisionCard security={security} algorithm={algorithm} />
         </aside>
         <section className="lg:col-span-8 xl:col-span-9">
+          {integrityAlert && (
+            <div className="mb-3 rounded-2xl border-2 border-red-400 bg-red-950/70 p-3 text-sm font-semibold text-red-100 shadow-[0_0_20px_rgba(248,113,113,.35)] animate-pulse">
+              ⚠ {integrityAlert}
+            </div>
+          )}
           <ChatBox messages={messages} user={user} />
           <div className="mt-4 flex items-center gap-3">
             <input

@@ -1,6 +1,11 @@
 {
-  "mode": "normal",
-  "latency": 15,
-  "bandwidth": 39.67,
-  "packet_loss": 0.61
+  "mode": "moderate",
+  "latency": 65,
+  "bandwidth": 6.58,
+  "packet_loss": 1.21,
+  "jitter": 14.33,
+  "throughput": 12.19,
+  "connection_stability": 81.76,
+  "response_time": 113,
+  "error_rate": 1.43
 }

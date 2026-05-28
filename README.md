@@ -14,6 +14,9 @@ The system demonstrates:
 - Dynamic encryption switching (`ECC`, `AES + RSA`, `AES`)
 - Network quality simulation (Python scripts only; no real network throttling)
 - Detailed per-transfer cryptographic analytics persisted in SQLite
+- SHA-256 integrity verification and tamper detection
+- Dynamic key rotation (every 5 messages)
+- Intelligent algorithm decision and security score tracking
 
 ## Tech Stack
 
@@ -41,7 +44,11 @@ SQLite file: `backend/database/communication.db`
 - encryption_algorithm
 - encryption_time_ms, transfer_time_ms, decryption_time_ms, total_processing_time_ms
 - latency_ms, bandwidth_mbps, packet_loss_percent, network_mode
+- message_hash, integrity_status, key_id
+- security_score, risk_level, cpu_usage, attack_risk, algorithm_reason
 - timestamp, date
+
+`encryption_keys` table stores key-rotation events.
 
 ## Runtime Flow
 
@@ -60,6 +67,10 @@ SQLite file: `backend/database/communication.db`
 - `POST /simulate/normal`
 - `POST /simulate/moderate`
 - `POST /simulate/slow`
+- `POST /simulate/security/low`
+- `POST /simulate/security/medium`
+- `POST /simulate/security/high`
+- `POST /simulate/tamper`
 - These simulation routes are public (no JWT token required) for demo/testing.
 
 Each simulation script writes `backend/network_state.json` with random QoS values:
@@ -110,11 +121,144 @@ Open `http://localhost:5173`.
 
 1. Login as `device1` and `device2`
 2. Send real-time messages and files
-3. Switch network mode from terminal:
+3. Switch network quality from terminal (3 commands):
    ```bash
    curl -X POST http://localhost:5000/simulate/normal
    curl -X POST http://localhost:5000/simulate/moderate
    curl -X POST http://localhost:5000/simulate/slow
    ```
-4. Observe algorithm switching (`ECC` -> `AES + RSA` -> `AES`)
-5. Confirm every transfer appears in analytics table and charts
+   Optional custom range payload example:
+   ```bash
+   curl -X POST http://localhost:5000/simulate/normal \
+     -H "Content-Type: application/json" \
+     -d '{
+       "ranges": {
+         "latency": [12, 35],
+         "bandwidth": [22, 48],
+         "packet_loss": [0, 0.8],
+         "jitter": [2, 7],
+         "throughput": [20, 40],
+         "connection_stability": [90, 99],
+         "response_time": [30, 70],
+         "error_rate": [0, 1.5]
+       }
+     }'
+   ```
+4. Switch security risk profile from terminal (3 commands):
+   ```bash
+   curl -X POST http://localhost:5000/simulate/security/low
+   curl -X POST http://localhost:5000/simulate/security/medium
+   curl -X POST http://localhost:5000/simulate/security/high
+   ```
+   Optional custom security range payload example:
+   ```bash
+   curl -X POST http://localhost:5000/simulate/security/medium \
+     -H "Content-Type: application/json" \
+     -d '{
+       "ranges": {
+         "cpu_usage": [40, 68],
+         "attack_risk": [0.8, 1.5],
+         "integrity_penalty": [0.5, 1.8],
+         "anomaly_score": [20, 55],
+         "auth_fail_rate": [1, 4],
+         "threat_signal": [20, 60]
+       }
+     }'
+   ```
+5. Trigger packet tampering simulation:
+   ```bash
+   curl -X POST http://localhost:5000/simulate/tamper
+   ```
+6. Observe algorithm switching, key rotation, integrity failures, and security score updates
+7. Confirm every transfer appears in analytics table and graphs
+
+## Risk Level Curl Commands
+
+Use these command groups separately:
+
+- **Network quality controls (3 curls):**
+  ```bash
+  curl -X POST http://localhost:5000/simulate/normal
+  curl -X POST http://localhost:5000/simulate/moderate
+  curl -X POST http://localhost:5000/simulate/slow
+  ```
+
+- **Security risk controls (3 curls):**
+  ```bash
+  curl -X POST http://localhost:5000/simulate/security/low
+  curl -X POST http://localhost:5000/simulate/security/medium
+  curl -X POST http://localhost:5000/simulate/security/high
+  ```
+
+- **Tamper simulation (optional):**
+  ```bash
+  curl -X POST http://localhost:5000/simulate/tamper
+  ```
+
+After each command, send a message to see new algorithm and score.  
+Each simulation command also starts short live variation (about 8 seconds) so values change in real time.
+
+## Security Features Added
+
+- **SHA-256 Integrity Verification**
+  - `message_hash` generated before transfer
+  - `integrity_status` set as `VERIFIED` / `FAILED` on receive side
+  - Red alert banner shown for compromised packets
+
+- **Dynamic Key Rotation**
+  - Automatic rotation after every 5 messages/files
+  - `key_id` stored on each communication row
+  - Rotation events emitted via Socket.IO (`key_rotation`)
+
+- **Security Score Engine**
+  - Score range: `0-100`
+  - Live risk classification: `LOW RISK`, `MEDIUM RISK`, `HIGH RISK`
+  - Includes algorithm strength, key size, integrity, packet loss, CPU, latency
+
+- **Intelligent Algorithm Selector**
+  - Weighted decision based on network, risk, CPU, complexity, retry, integrity
+  - Emits human-readable `algorithm_reason`
+  - Drives live cards on chat page and analytics dashboard
+
+## How Algorithm Selection Works
+
+Algorithm selection policy is driven by **network mode + security risk level**:
+
+- **If network = normal**
+  - risk = HIGH or MEDIUM -> `ECC`
+  - risk = LOW -> `AES + RSA`
+
+- **If network = moderate**
+  - risk = HIGH -> `ECC`
+  - risk = MEDIUM -> `AES + RSA`
+  - risk = LOW -> `AES`
+
+- **If network = slow**
+  - risk = HIGH -> `AES + RSA`
+  - risk = MEDIUM -> `AES`
+  - risk = LOW -> `AES`
+
+Reason text shown on chat page is generated from this policy for each message.
+
+The security score is recalculated per message from:
+
+- algorithm strength + key contribution
+- integrity status
+- packet loss, latency, transfer time penalties
+- CPU usage and risk adjustments
+
+The resulting score maps to:
+
+- `61-100`: LOW RISK
+- `31-60`: MEDIUM RISK
+- `0-30`: HIGH RISK
+
+## Socket.IO Live Events
+
+- `receive_message`
+- `analytics_update`
+- `network_update`
+- `algorithm_update`
+- `security_update`
+- `integrity_alert`
+- `key_rotation`

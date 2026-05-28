@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import AnalyticsTable from "../components/AnalyticsTable";
 import TimelineGraph from "../components/TimelineGraph";
 import AlgorithmBarGraph from "../components/AlgorithmBarGraph";
+import SecurityScoreGraph from "../components/SecurityScoreGraph";
 import socket from "../socket/socket";
 import api from "../services/api";
 import { AuthContext } from "../context/AuthContext";
@@ -29,9 +30,10 @@ export default function AnalyticsPage() {
       <Navbar user={user} onLogout={() => { logout(); navigate("/"); }} />
       <h2 className="mb-3 text-lg font-semibold text-blue-200">Detailed Communication Analytics</h2>
       <AnalyticsTable rows={rows} />
-      <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
         <TimelineGraph rows={rows} />
         <AlgorithmBarGraph rows={rows} />
+        <SecurityScoreGraph rows={rows} />
       </section>
     </main>
   );
