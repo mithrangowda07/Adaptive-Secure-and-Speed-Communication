@@ -5,7 +5,11 @@ const db = require("../database/db");
 let currentKeyId = 1;
 let messageCounter = 0;
 let currentAESKey = crypto.randomBytes(32).toString("hex");
-let currentRSAKeyPair = forge.pki.rsa.generateKeyPair({ bits: 1024, e: 0x10001 });
+let currentRSAKeyPair = crypto.generateKeyPairSync("rsa", {
+  modulusLength: 1024,
+  publicKeyEncoding: { type: "pkcs1", format: "pem" },
+  privateKeyEncoding: { type: "pkcs1", format: "pem" }
+});
 let currentECCKeyPair = crypto.generateKeyPairSync("ec", { namedCurve: "prime256v1" });
 
 const insertKeyEvent = db.prepare(`
@@ -17,7 +21,11 @@ function rotateAllKeys(reason) {
   currentKeyId += 1;
   messageCounter = 0;
   currentAESKey = crypto.randomBytes(32).toString("hex");
-  currentRSAKeyPair = forge.pki.rsa.generateKeyPair({ bits: 1024, e: 0x10001 });
+  currentRSAKeyPair = crypto.generateKeyPairSync("rsa", {
+    modulusLength: 1024,
+    publicKeyEncoding: { type: "pkcs1", format: "pem" },
+    privateKeyEncoding: { type: "pkcs1", format: "pem" }
+  });
   currentECCKeyPair = crypto.generateKeyPairSync("ec", { namedCurve: "prime256v1" });
   insertKeyEvent.run({
     key_id: currentKeyId,

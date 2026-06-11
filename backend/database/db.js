@@ -31,6 +31,9 @@ db.exec(`
     bandwidth_mbps REAL NOT NULL,
     packet_loss_percent REAL NOT NULL,
     network_mode TEXT NOT NULL,
+    network_quality_score REAL DEFAULT 0,
+    stability_score REAL DEFAULT 0,
+    transfer_std_deviation REAL DEFAULT 0,
     message_hash TEXT,
     integrity_status TEXT,
     key_id INTEGER DEFAULT 1,
@@ -49,7 +52,7 @@ db.exec(`
 `);
 
 const messageColumns = db.prepare("PRAGMA table_info(messages)").all().map((column) => column.name);
-if (!messageColumns.includes("sent_message")) {
+if (!messageColumns.includes("network_quality_score")) {
   db.exec("DROP TABLE IF EXISTS messages");
   db.exec(`
     CREATE TABLE messages (
@@ -68,6 +71,9 @@ if (!messageColumns.includes("sent_message")) {
       bandwidth_mbps REAL NOT NULL,
       packet_loss_percent REAL NOT NULL,
       network_mode TEXT NOT NULL,
+      network_quality_score REAL DEFAULT 0,
+      stability_score REAL DEFAULT 0,
+      transfer_std_deviation REAL DEFAULT 0,
       message_hash TEXT,
       integrity_status TEXT,
       key_id INTEGER DEFAULT 1,

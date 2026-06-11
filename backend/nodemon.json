@@ -1,0 +1,12 @@
+{
+  "ignore": [
+    "database/*",
+    "uploads/*",
+    "network_state.json",
+    "security_state.json",
+    "*.db",
+    "*.db-journal",
+    "*.db-shm",
+    "*.db-wal"
+  ]
+}

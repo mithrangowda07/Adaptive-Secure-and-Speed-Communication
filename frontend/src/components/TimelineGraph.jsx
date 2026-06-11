@@ -1,7 +1,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-const algValue = { ECC: 3, "AES + RSA": 2, AES: 1 };
-const labelByValue = { 3: "ECC", 2: "AES + RSA", 1: "AES" };
+const algValue = { "ECC": 5, "AES-256 + RSA": 4, "AES-256": 3, "ChaCha20": 2, "AES-128": 1 };
+const labelByValue = { 5: "ECC", 4: "AES-256 + RSA", 3: "AES-256", 2: "ChaCha20", 1: "AES-128" };
 
 export default function TimelineGraph({ rows }) {
   const data = rows
@@ -20,7 +20,7 @@ export default function TimelineGraph({ rows }) {
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
           <XAxis dataKey="time" stroke="#94a3b8" minTickGap={24} />
-          <YAxis stroke="#94a3b8" ticks={[1, 2, 3]} tickFormatter={(value) => labelByValue[value]} />
+          <YAxis stroke="#94a3b8" ticks={[1, 2, 3, 4, 5]} tickFormatter={(value) => labelByValue[value]} />
           <Tooltip
             contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #334155", color: "#f8fafc" }}
             labelStyle={{ color: "#e2e8f0" }}

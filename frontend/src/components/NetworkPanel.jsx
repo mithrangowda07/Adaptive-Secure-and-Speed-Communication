@@ -1,10 +1,19 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
-const tone = { normal: "text-emerald-400", moderate: "text-yellow-400", slow: "text-red-400" };
+const tone = { 
+  excellent: "text-emerald-400", 
+  good: "text-cyan-400", 
+  moderate: "text-amber-400", 
+  weak: "text-orange-400", 
+  poor: "text-red-400" 
+};
 
 export default function NetworkPanel({ state, algorithm }) {
   const [openInfo, setOpenInfo] = useState(false);
+
+  const qualityScore = state.network_quality_score ?? state.qos_score ?? 0;
+  const qualityStatus = state.qos_status || "N/A";
 
   return (
     <div className="glass rounded-3xl p-5 shadow-xl shadow-blue-950/20">
@@ -19,10 +28,14 @@ export default function NetworkPanel({ state, algorithm }) {
       </div>
       <div className="space-y-3 text-sm">
         <p>
-          Current Network Mode:{" "}
-          <span className={`font-semibold uppercase ${tone[state.mode] || "text-slate-200"}`}>
-            {state.mode}
+          Network Quality:{" "}
+          <span className={`font-semibold uppercase ${tone[qualityStatus.toLowerCase()] || "text-slate-200"}`}>
+            {qualityStatus}
           </span>
+        </p>
+        <p>
+          Network Quality Score:{" "}
+          <span className="font-bold text-cyan-300">{qualityScore}/100</span>
         </p>
         <p>
           Current Encryption Algorithm:{" "}
@@ -54,7 +67,7 @@ export default function NetworkPanel({ state, algorithm }) {
                 responseScore*0.10 + errorScore*0.05
               </div>
               <p className="mt-3 text-sm text-slate-300">
-                Status rule: QoS &gt;= 70 = Good, 40-69 = Average, below 40 = Poor.
+                Status rule: QoS &gt;= 90 = Excellent, 75-89 = Good, 60-74 = Moderate, 40-59 = Weak, below 40 = Poor.
               </p>
               <div className="mt-5 flex justify-end">
                 <button

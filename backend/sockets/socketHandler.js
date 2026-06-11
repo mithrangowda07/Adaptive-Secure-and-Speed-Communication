@@ -13,43 +13,9 @@ function registerSocketHandlers(io) {
   // Tracks algorithm transitions for the right-side live status panel.
   let previousAlgorithm = null;
 
-  // Automate network mode and security level shifts every 5 seconds
-  const modes = ["normal", "moderate", "slow"];
-  const securityLevels = ["low", "medium", "high"];
-  setInterval(() => {
-    try {
-      const randomMode = modes[Math.floor(Math.random() * modes.length)];
-      const { state } = executeSimulation(randomMode);
-
-      const randomLevel = securityLevels[Math.floor(Math.random() * securityLevels.length)];
-      const { buildStateFromLevel, writeSecurityState } = require("../utils/securitySimulationState");
-      const nextSecurity = buildStateFromLevel(randomLevel);
-      writeSecurityState(nextSecurity);
-      
-      const algorithmInfo = resolveAlgorithmState(previousAlgorithm);
-      const previous = previousAlgorithm || algorithmInfo.currentAlgorithm;
-      previousAlgorithm = algorithmInfo.currentAlgorithm;
-
-      io.emit("network_update", state);
-      io.emit("algorithm_update", {
-        currentAlgorithm: algorithmInfo.currentAlgorithm,
-        previousAlgorithm: previous
-      });
-
-      io.emit("security_update", {
-        securityScore: nextSecurity.simulatedScore,
-        riskLevel: nextSecurity.riskLevel,
-        integrityStatus: nextSecurity.integrityStatus || "VERIFIED",
-        keyId: algorithmInfo.securityState?.keyId || 1,
-        algorithmReason: algorithmInfo.decision.reason,
-        performanceLevel: algorithmInfo.decision.performanceLevel,
-        securityParams: nextSecurity.security_params || null
-      });
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error("Auto network/security shift failed:", error);
-    }
-  }, 5000);
+  // Initialize and run the continuous smooth network quality evolution simulation
+  const { initSimulation } = require("../controllers/networkController");
+  initSimulation(io);
 
   io.on("connection", (socket) => {
     socket.on("send_message", async (payload) => {

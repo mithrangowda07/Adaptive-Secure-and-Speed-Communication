@@ -6,13 +6,14 @@ export default function AnalyticsTable({ rows }) {
     { key: "encryption_algorithm", label: "Encryption Algorithm" },
     { key: "encryption_time_ms", label: "Encryption Time (ms)" },
     { key: "transfer_time_ms", label: "Transfer Time (ms)" },
-    { key: "network_mode", label: "Network Mode" },
+    { key: "network_quality_score", label: "Network Quality Score" },
+    { key: "network_mode", label: "Network Quality" },
+    { key: "stability_score", label: "Stability Score" },
+    { key: "transfer_std_deviation", label: "Std Deviation (ms)" },
     { key: "timestamp", label: "Timestamp" },
     { key: "key_id", label: "Key ID" },
     { key: "message_hash", label: "Message Hash" },
     { key: "integrity_status", label: "Integrity Status" },
-    { key: "security_score", label: "Security Score" },
-    { key: "risk_level", label: "Risk Level" },
     { key: "algorithm_reason", label: "Algorithm Reason" },
     { key: "decryption_time_ms", label: "Decryption Time (ms)" },
     { key: "latency_ms", label: "Latency (ms)" },
@@ -51,15 +52,16 @@ export default function AnalyticsTable({ rows }) {
                 <td className="px-3 py-2">{r.encryption_algorithm}</td>
                 <td className="px-3 py-2">{r.encryption_time_ms}</td>
                 <td className="px-3 py-2">{r.transfer_time_ms}</td>
-                <td className="px-3 py-2 capitalize">{r.network_mode}</td>
+                <td className="px-3 py-2">{r.network_quality_score ?? 0}</td>
+                <td className="px-3 py-2 capitalize">{r.network_mode || "Poor"}</td>
+                <td className="px-3 py-2">{r.stability_score ?? 0}</td>
+                <td className="px-3 py-2">{r.transfer_std_deviation ?? 0}</td>
                 <td className="whitespace-nowrap px-3 py-2">{r.timestamp}</td>
                 <td className="px-3 py-2">KEY-{r.key_id}</td>
                 <td className="max-w-[260px] truncate px-3 py-2" title={r.message_hash}>{r.message_hash || "-"}</td>
                 <td className={`px-3 py-2 font-semibold ${r.integrity_status === "FAILED" ? "text-red-400" : "text-emerald-400"}`}>
                   {r.integrity_status || "VERIFIED"}
                 </td>
-                <td className="px-3 py-2">{r.security_score ?? "-"}</td>
-                <td className="px-3 py-2">{r.risk_level || "-"}</td>
                 <td className="max-w-[260px] truncate px-3 py-2" title={r.algorithm_reason}>{r.algorithm_reason || "-"}</td>
                 <td className="px-3 py-2">{r.decryption_time_ms}</td>
                 <td className="px-3 py-2">{r.latency_ms}</td>

@@ -6,7 +6,7 @@ export default function AlgorithmBarGraph({ rows }) {
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
-  const data = ["ECC", "AES + RSA", "AES"].map((algorithm) => ({
+  const data = ["ECC", "AES-256 + RSA", "AES-256", "ChaCha20", "AES-128"].map((algorithm) => ({
     algorithm,
     count: counts[algorithm] || 0
   }));

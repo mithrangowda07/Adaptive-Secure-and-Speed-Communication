@@ -11,7 +11,7 @@ export default function AlgorithmDecisionCard({ security, algorithm }) {
         </p>
         <p>Reason: <span className="text-slate-200">{security.algorithmReason}</span></p>
         <p>Network Condition: <span className="text-slate-200">{security.performanceLevel || "MODERATE"}</span></p>
-        <p>Threat Level: <span className="text-slate-200">{security.riskLevel}</span></p>
+        <p>Stability Rating: <span className="text-slate-200">{security.riskLevel}</span></p>
       </div>
     </div>
   );

@@ -12,10 +12,7 @@ const { saveCommunication, fetchAnalytics } = require("../services/analyticsServ
 const { resolveAlgorithmState } = require("../services/networkMonitor");
 const { generateHash, verifyHash } = require("../utils/integrityManager");
 const { useKeyForMessage } = require("../utils/keyRotationManager");
-const { calculateSecurityScore } = require("../utils/securityScore");
 const { consumeTamperMode } = require("../utils/tamperManager");
-const { readSecurityState } = require("../utils/securitySimulationState");
-let integrityFailureCount = 0;
 
 const uploadPath = path.join(__dirname, "..", "uploads");
 const storage = multer.diskStorage({
@@ -23,11 +20,6 @@ const storage = multer.diskStorage({
   filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 });
 const upload = multer({ storage });
-
-function delayFromLatency(latency) {
-  // Scale synthetic network delay from simulated latency.
-  return Math.max(30, latency * 4);
-}
 
 function buildRecord(data) {
   const now = new Date();
@@ -45,7 +37,10 @@ function buildRecord(data) {
     latency_ms: data.latency_ms,
     bandwidth_mbps: data.bandwidth_mbps,
     packet_loss_percent: data.packet_loss_percent,
-    network_mode: data.network_mode,
+    network_mode: data.network_mode || "Good",
+    network_quality_score: data.network_quality_score ?? 80,
+    stability_score: data.stability_score ?? 80,
+    transfer_std_deviation: data.transfer_std_deviation ?? 0,
     message_hash: data.message_hash,
     integrity_status: data.integrity_status,
     key_id: data.key_id,
@@ -64,20 +59,9 @@ function buildRecord(data) {
 }
 
 async function processMessage(payload) {
-  const securityState = readSecurityState();
-  const cpuUsage = securityState.cpuUsage;
-  const state = resolveAlgorithmState(payload.previousAlgorithm, {
-    messageSize: (payload.message || "").length,
-    fileSize: 0,
-    cpuUsage,
-    attackRisk: Math.max(Math.min(3, integrityFailureCount), securityState.attackRisk || 0),
-    integrityStatus: "VERIFIED",
-    retryCount: 0,
-    riskLevel: securityState.riskLevel
-  });
+  const state = resolveAlgorithmState(payload.previousAlgorithm);
   const keyMaterial = useKeyForMessage();
 
-  // Encryption benchmark starts before any transport simulation.
   const encStart = performance.now();
   const encrypted = encryptMessage(payload.message, state.currentAlgorithm, keyMaterial);
   const encTime = performance.now() - encStart;
@@ -93,8 +77,22 @@ async function processMessage(payload) {
       incomingPayload.slice(flipIndex + 1);
   }
 
+  // Simulate delay to keep transfer times close to 250 ms target
+  const Q = state.network.network_quality_score;
+  const baseNetworkDelay = 250 - (Q - 50) * 2;
+  
+  let algoOverhead = 0;
+  if (state.currentAlgorithm === "ECC") algoOverhead = 60;
+  else if (state.currentAlgorithm === "AES-256 + RSA") algoOverhead = 30;
+  else if (state.currentAlgorithm === "AES-256") algoOverhead = 0;
+  else if (state.currentAlgorithm === "ChaCha20") algoOverhead = -30;
+  else if (state.currentAlgorithm === "AES-128") algoOverhead = -60;
+  
+  const noise = Math.floor(Math.random() * 17) - 8;
+  const simulatedDelay = Math.max(10, baseNetworkDelay + algoOverhead + noise);
+
   const transferStart = performance.now();
-  await new Promise((resolve) => setTimeout(resolve, delayFromLatency(state.network.latency)));
+  await new Promise((resolve) => setTimeout(resolve, simulatedDelay));
   const transferTime = performance.now() - transferStart;
 
   const integrityStatus = verifyHash(messageHash, incomingPayload);
@@ -105,23 +103,19 @@ async function processMessage(payload) {
       : "[INTEGRITY_CHECK_FAILED]";
   const decTime = performance.now() - decStart;
   const totalTime = encTime + transferTime + decTime;
-  const attackRisk = integrityStatus === "FAILED" ? 3 : 0;
-  if (integrityStatus === "FAILED") {
-    integrityFailureCount += 1;
-  } else if (integrityFailureCount > 0) {
-    integrityFailureCount -= 1;
-  }
-  const security = calculateSecurityScore({
-    algorithm: state.currentAlgorithm,
-    keySize: state.currentAlgorithm === "ECC" ? 256 : 256,
-    packetLoss: state.network.packet_loss,
-    latency: state.network.latency,
-    bandwidth: state.network.bandwidth,
-    transferTime,
-    cpuUsage,
-    riskLevel: state.decision.riskLevel,
-    integrityStatus
-  });
+
+  // Mock score & risk ratings based on stability for compatibility
+  const algoStrength = {
+    "ECC": 95,
+    "AES-256 + RSA": 85,
+    "AES-256": 75,
+    "ChaCha20": 60,
+    "AES-128": 45
+  };
+  const securityScore = algoStrength[state.currentAlgorithm] || 70;
+  const riskLevel = state.decision.stdDev <= 5 ? "EXCELLENT STABILITY" :
+                    state.decision.stdDev <= 15 ? "GOOD STABILITY" :
+                    state.decision.stdDev <= 30 ? "MODERATE STABILITY" : "POOR STABILITY";
 
   const record = buildRecord({
     sender: payload.sender,
@@ -135,32 +129,36 @@ async function processMessage(payload) {
     latency_ms: state.network.latency,
     bandwidth_mbps: state.network.bandwidth,
     packet_loss_percent: state.network.packet_loss,
-    network_mode: state.network.mode,
+    network_mode: state.network.qos_status,
+    network_quality_score: Q,
+    stability_score: state.decision.stabilityScore,
+    transfer_std_deviation: state.decision.stdDev,
     message_hash: messageHash,
     integrity_status: integrityStatus,
     key_id: keyMaterial.keyId,
-    security_score: security.securityScore,
-    risk_level: security.riskLevel,
-    cpu_usage: cpuUsage,
-    attack_risk: attackRisk,
+    security_score: securityScore,
+    risk_level: riskLevel,
+    cpu_usage: 35 + Math.random() * 20,
+    attack_risk: integrityStatus === "FAILED" ? 3 : 0,
     algorithm_reason: state.decision.reason,
     sent_message: payload.message,
     encrypted_message_sent: encrypted,
     encrypted_message_received: incomingPayload,
     decrypted_message: plain
   });
+  
   saveCommunication(record);
   return {
     record,
     network: state.network,
     currentAlgorithm: state.currentAlgorithm,
     security: {
-      securityScore: security.securityScore,
-      riskLevel: security.riskLevel,
+      securityScore: securityScore,
+      riskLevel: riskLevel,
       integrityStatus,
       keyId: keyMaterial.keyId,
       algorithmReason: state.decision.reason,
-      performanceLevel: state.decision.performanceLevel
+      performanceLevel: state.network.qos_status
     },
     keyRotation: keyMaterial.rotation
   };
@@ -173,17 +171,7 @@ async function uploadFile(req, res) {
     }
     const sender = req.user.username;
     const receiver = req.body.receiver || (sender === "device1" ? "device2" : "device1");
-    const securityState = readSecurityState();
-    const cpuUsage = securityState.cpuUsage;
-    const state = resolveAlgorithmState(null, {
-      messageSize: 0,
-      fileSize: req.file.size / (1024 * 1024),
-      cpuUsage,
-      attackRisk: Math.max(Math.min(3, integrityFailureCount), securityState.attackRisk || 0),
-      integrityStatus: "VERIFIED",
-      retryCount: 0,
-      riskLevel: securityState.riskLevel
-    });
+    const state = resolveAlgorithmState(null);
     const keyMaterial = useKeyForMessage();
 
     const sourceBuffer = fs.readFileSync(req.file.path);
@@ -193,29 +181,43 @@ async function uploadFile(req, res) {
     const messageHash = generateHash(encryptedBuffer.toString("utf8"));
     const integrityStatus = verifyHash(messageHash, encryptedBuffer.toString("utf8"));
 
+    // Simulate transfer time with file size overhead
+    const Q = state.network.network_quality_score;
+    const baseNetworkDelay = 250 - (Q - 50) * 2;
+    
+    let algoOverhead = 0;
+    if (state.currentAlgorithm === "ECC") algoOverhead = 60;
+    else if (state.currentAlgorithm === "AES-256 + RSA") algoOverhead = 30;
+    else if (state.currentAlgorithm === "AES-256") algoOverhead = 0;
+    else if (state.currentAlgorithm === "ChaCha20") algoOverhead = -30;
+    else if (state.currentAlgorithm === "AES-128") algoOverhead = -60;
+    
+    const noise = Math.floor(Math.random() * 17) - 8;
+    const fileSizeMb = req.file.size / (1024 * 1024);
+    const fileSizeOverhead = fileSizeMb * 100;
+    const simulatedDelay = Math.max(10, baseNetworkDelay + algoOverhead + noise + fileSizeOverhead);
+
     const transferStart = performance.now();
-    await new Promise((resolve) => setTimeout(resolve, delayFromLatency(state.network.latency)));
+    await new Promise((resolve) => setTimeout(resolve, simulatedDelay));
     const transferTime = performance.now() - transferStart;
 
     const decStart = performance.now();
     decryptBuffer(encryptedBuffer, state.currentAlgorithm, keyMaterial);
     const decTime = performance.now() - decStart;
     const totalTime = encTime + transferTime + decTime;
-    const attackRisk = 0;
-    const security = calculateSecurityScore({
-      algorithm: state.currentAlgorithm,
-      keySize: state.currentAlgorithm === "ECC" ? 256 : 256,
-      packetLoss: state.network.packet_loss,
-      latency: state.network.latency,
-      bandwidth: state.network.bandwidth,
-      transferTime,
-      cpuUsage,
-      riskLevel: state.decision.riskLevel,
-      integrityStatus
-    });
 
-    const encStr = encryptedBuffer.toString("base64");
-    const truncatedCipher = encStr.length > 500 ? encStr.slice(0, 500) + "..." : encStr;
+    const algoStrength = {
+      "ECC": 95,
+      "AES-256 + RSA": 85,
+      "AES-256": 75,
+      "ChaCha20": 60,
+      "AES-128": 45
+    };
+    const securityScore = algoStrength[state.currentAlgorithm] || 70;
+    const riskLevel = state.decision.stdDev <= 5 ? "EXCELLENT STABILITY" :
+                      state.decision.stdDev <= 15 ? "GOOD STABILITY" :
+                      state.decision.stdDev <= 30 ? "MODERATE STABILITY" : "POOR STABILITY";
+
     const record = buildRecord({
       sender,
       receiver,
@@ -229,38 +231,43 @@ async function uploadFile(req, res) {
       latency_ms: state.network.latency,
       bandwidth_mbps: state.network.bandwidth,
       packet_loss_percent: state.network.packet_loss,
-      network_mode: state.network.mode,
+      network_mode: state.network.qos_status,
+      network_quality_score: Q,
+      stability_score: state.decision.stabilityScore,
+      transfer_std_deviation: state.decision.stdDev,
       message_hash: messageHash,
       integrity_status: integrityStatus,
       key_id: keyMaterial.keyId,
-      security_score: security.securityScore,
-      risk_level: security.riskLevel,
-      cpu_usage: cpuUsage,
-      attack_risk: attackRisk,
+      security_score: securityScore,
+      risk_level: riskLevel,
+      cpu_usage: 35 + Math.random() * 20,
+      attack_risk: 0,
       algorithm_reason: state.decision.reason,
       sent_message: `[File: ${req.file.originalname} (${req.file.size} bytes)]`,
-      encrypted_message_sent: truncatedCipher,
-      encrypted_message_received: truncatedCipher,
+      encrypted_message_sent: encryptedBuffer.toString("base64"),
+      encrypted_message_received: encryptedBuffer.toString("base64"),
       decrypted_message: `[File Decrypted Successfully]`
     });
 
     saveCommunication(record);
-    req.app.get("io").emit("receive_message", record);
-    req.app.get("io").emit("analytics_update", fetchAnalytics(200));
-    req.app.get("io").emit("network_update", state.network);
-    req.app.get("io").emit("algorithm_update", {
+    
+    const io = req.app.get("io");
+    io.emit("receive_message", record);
+    io.emit("analytics_update", fetchAnalytics(200));
+    io.emit("network_update", state.network);
+    io.emit("algorithm_update", {
       currentAlgorithm: state.currentAlgorithm
     });
-    req.app.get("io").emit("security_update", {
-      securityScore: security.securityScore,
-      riskLevel: security.riskLevel,
+    io.emit("security_update", {
+      securityScore: securityScore,
+      riskLevel: riskLevel,
       integrityStatus,
       keyId: keyMaterial.keyId,
       algorithmReason: state.decision.reason,
-      performanceLevel: state.decision.performanceLevel
+      performanceLevel: state.network.qos_status
     });
     if (keyMaterial.rotation) {
-      req.app.get("io").emit("key_rotation", keyMaterial.rotation);
+      io.emit("key_rotation", keyMaterial.rotation);
     }
 
     return res.json({

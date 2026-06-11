@@ -21,8 +21,10 @@ function calculateQosScore(state) {
 }
 
 function deriveQosStatus(qosScore) {
-  if (qosScore >= 70) return "Good";
-  if (qosScore >= 40) return "Average";
+  if (qosScore >= 90) return "Excellent";
+  if (qosScore >= 75) return "Good";
+  if (qosScore >= 60) return "Moderate";
+  if (qosScore >= 40) return "Weak";
   return "Poor";
 }
 

@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 import NetworkPanel from "../components/NetworkPanel";
 import ChatBox from "../components/ChatBox";
 import FileUpload from "../components/FileUpload";
-import SecurityScoreCard from "../components/SecurityScoreCard";
+import TransferStabilityCard from "../components/TransferStabilityCard";
 import AlgorithmDecisionCard from "../components/AlgorithmDecisionCard";
 import socket from "../socket/socket";
 import { AuthContext } from "../context/AuthContext";
@@ -108,12 +108,14 @@ export default function ChatPage() {
       <Navbar user={user} onLogout={() => { logout(); navigate("/"); }} />
       <div className="glass mb-4 rounded-2xl p-3 text-sm">
         Current Network Quality:{" "}
-        <span className="font-semibold capitalize text-blue-300">{network.mode}</span>
+        <span className="font-semibold capitalize text-blue-300">{network.qos_status || "N/A"}</span>
       </div>
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <aside className="lg:col-span-4 xl:col-span-3">
           <NetworkPanel state={network} algorithm={algorithm} />
-          <SecurityScoreCard security={security} />
+          <div className="mt-4">
+            <TransferStabilityCard rows={messages} />
+          </div>
           <AlgorithmDecisionCard security={security} algorithm={algorithm} />
         </aside>
         <section className="lg:col-span-8 xl:col-span-9">
