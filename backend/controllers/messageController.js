@@ -55,7 +55,11 @@ function buildRecord(data) {
     attack_risk: data.attack_risk,
     algorithm_reason: data.algorithm_reason,
     timestamp: now.toISOString(),
-    date: now.toISOString().split("T")[0]
+    date: now.toISOString().split("T")[0],
+    sent_message: data.sent_message || null,
+    encrypted_message_sent: data.encrypted_message_sent || null,
+    encrypted_message_received: data.encrypted_message_received || null,
+    decrypted_message: data.decrypted_message || null
   };
 }
 
@@ -139,7 +143,11 @@ async function processMessage(payload) {
     risk_level: security.riskLevel,
     cpu_usage: cpuUsage,
     attack_risk: attackRisk,
-    algorithm_reason: state.decision.reason
+    algorithm_reason: state.decision.reason,
+    sent_message: payload.message,
+    encrypted_message_sent: encrypted,
+    encrypted_message_received: incomingPayload,
+    decrypted_message: plain
   });
   saveCommunication(record);
   return {
@@ -206,6 +214,8 @@ async function uploadFile(req, res) {
       integrityStatus
     });
 
+    const encStr = encryptedBuffer.toString("base64");
+    const truncatedCipher = encStr.length > 500 ? encStr.slice(0, 500) + "..." : encStr;
     const record = buildRecord({
       sender,
       receiver,
@@ -227,7 +237,11 @@ async function uploadFile(req, res) {
       risk_level: security.riskLevel,
       cpu_usage: cpuUsage,
       attack_risk: attackRisk,
-      algorithm_reason: state.decision.reason
+      algorithm_reason: state.decision.reason,
+      sent_message: `[File: ${req.file.originalname} (${req.file.size} bytes)]`,
+      encrypted_message_sent: truncatedCipher,
+      encrypted_message_received: truncatedCipher,
+      decrypted_message: `[File Decrypted Successfully]`
     });
 
     saveCommunication(record);

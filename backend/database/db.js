@@ -40,12 +40,16 @@ db.exec(`
     attack_risk INTEGER DEFAULT 0,
     algorithm_reason TEXT DEFAULT '',
     timestamp TEXT NOT NULL,
-    date TEXT NOT NULL
+    date TEXT NOT NULL,
+    sent_message TEXT,
+    encrypted_message_sent TEXT,
+    encrypted_message_received TEXT,
+    decrypted_message TEXT
   );
 `);
 
 const messageColumns = db.prepare("PRAGMA table_info(messages)").all().map((column) => column.name);
-if (!messageColumns.includes("algorithm_reason")) {
+if (!messageColumns.includes("sent_message")) {
   db.exec("DROP TABLE IF EXISTS messages");
   db.exec(`
     CREATE TABLE messages (
@@ -73,7 +77,11 @@ if (!messageColumns.includes("algorithm_reason")) {
       attack_risk INTEGER DEFAULT 0,
       algorithm_reason TEXT DEFAULT '',
       timestamp TEXT NOT NULL,
-      date TEXT NOT NULL
+      date TEXT NOT NULL,
+      sent_message TEXT,
+      encrypted_message_sent TEXT,
+      encrypted_message_received TEXT,
+      decrypted_message TEXT
     );
   `);
 }

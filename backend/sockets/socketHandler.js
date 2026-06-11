@@ -13,6 +13,44 @@ function registerSocketHandlers(io) {
   // Tracks algorithm transitions for the right-side live status panel.
   let previousAlgorithm = null;
 
+  // Automate network mode and security level shifts every 5 seconds
+  const modes = ["normal", "moderate", "slow"];
+  const securityLevels = ["low", "medium", "high"];
+  setInterval(() => {
+    try {
+      const randomMode = modes[Math.floor(Math.random() * modes.length)];
+      const { state } = executeSimulation(randomMode);
+
+      const randomLevel = securityLevels[Math.floor(Math.random() * securityLevels.length)];
+      const { buildStateFromLevel, writeSecurityState } = require("../utils/securitySimulationState");
+      const nextSecurity = buildStateFromLevel(randomLevel);
+      writeSecurityState(nextSecurity);
+      
+      const algorithmInfo = resolveAlgorithmState(previousAlgorithm);
+      const previous = previousAlgorithm || algorithmInfo.currentAlgorithm;
+      previousAlgorithm = algorithmInfo.currentAlgorithm;
+
+      io.emit("network_update", state);
+      io.emit("algorithm_update", {
+        currentAlgorithm: algorithmInfo.currentAlgorithm,
+        previousAlgorithm: previous
+      });
+
+      io.emit("security_update", {
+        securityScore: nextSecurity.simulatedScore,
+        riskLevel: nextSecurity.riskLevel,
+        integrityStatus: nextSecurity.integrityStatus || "VERIFIED",
+        keyId: algorithmInfo.securityState?.keyId || 1,
+        algorithmReason: algorithmInfo.decision.reason,
+        performanceLevel: algorithmInfo.decision.performanceLevel,
+        securityParams: nextSecurity.security_params || null
+      });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("Auto network/security shift failed:", error);
+    }
+  }, 5000);
+
   io.on("connection", (socket) => {
     socket.on("send_message", async (payload) => {
       try {
@@ -95,6 +133,8 @@ function registerSocketHandlers(io) {
           integrityStatus
         });
 
+        const encStr = encryptedBuffer.toString("base64");
+        const truncatedCipher = encStr.length > 500 ? encStr.slice(0, 500) + "..." : encStr;
         const record = {
           sender: payload.sender,
           receiver: payload.receiver,
@@ -119,7 +159,11 @@ function registerSocketHandlers(io) {
           attack_risk: 0,
           algorithm_reason: algorithmInfo.decision?.reason || "Balanced security and performance",
           timestamp: now.toISOString(),
-          date: now.toISOString().split("T")[0]
+          date: now.toISOString().split("T")[0],
+          sent_message: `[File: ${payload.fileName} (${payload.fileSize} bytes)]`,
+          encrypted_message_sent: truncatedCipher,
+          encrypted_message_received: truncatedCipher,
+          decrypted_message: `[File Decrypted Successfully]`
         };
         saveCommunication(record);
         io.emit("receive_message", record);
