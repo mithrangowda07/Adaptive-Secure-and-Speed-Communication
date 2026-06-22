@@ -65,7 +65,7 @@ export default function ChatBox({ messages, user }) {
 
   return (
     <div ref={ref} className="glass h-[72vh] overflow-y-auto rounded-3xl p-5 shadow-xl border border-slate-700/30">
-      <div className="max-w-3xl mx-auto space-y-1">
+      <div className="w-full space-y-1">
         {renderMessageList()}
       </div>
     </div>

@@ -4,6 +4,15 @@ A research-oriented full-stack demonstration of **dynamic cryptographic algorith
 
 ---
 
+## 🌟 Recent Updates
+
+*   **UI/UX Enhancements:** Included a Light Theme for better accessibility and readability across different environments.
+*   **Analytics & Tables:** Added comprehensive data tables (Transmission Log Table and Analytics Table) to track cryptographic lifecycle logs and telemetry.
+*   **Chat Interface:** Improved chat layout with full-width responsive message alignment.
+*   **General Improvements:** Various under-the-hood stability improvements and bug fixes.
+
+---
+
 ## 📌 Project Objective
 
 The system demonstrates a core cryptographic-network trade-off:
