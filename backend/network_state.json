@@ -1,14 +1,14 @@
 {
-  "mode": "weak",
-  "network_quality_score": 51.21,
-  "qos_score": 51.21,
-  "qos_status": "Weak",
-  "latency": 204,
-  "bandwidth": 24.81,
-  "packet_loss": 3.01,
-  "jitter": 27.03,
-  "throughput": 18.58,
-  "connection_stability": 59.65,
-  "response_time": 236,
-  "error_rate": 4.54
+  "mode": "good",
+  "network_quality_score": 75.62,
+  "qos_score": 75.62,
+  "qos_status": "Good",
+  "latency": 86,
+  "bandwidth": 36.62,
+  "packet_loss": 1.32,
+  "jitter": 14.55,
+  "throughput": 32.47,
+  "connection_stability": 88.68,
+  "response_time": 148,
+  "error_rate": 2.51
 }

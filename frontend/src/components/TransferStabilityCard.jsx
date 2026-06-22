@@ -73,7 +73,7 @@ export default function TransferStabilityCard({ rows }) {
             <div>
               <p className="text-xs text-slate-400 uppercase tracking-wider">Standard Deviation</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-4xl font-extrabold text-white">{stats.stdDev.toFixed(2)}</span>
+                <span className="text-4xl font-extrabold text-slate-100">{stats.stdDev.toFixed(2)}</span>
                 <span className="text-slate-400 text-lg">ms</span>
               </div>
             </div>

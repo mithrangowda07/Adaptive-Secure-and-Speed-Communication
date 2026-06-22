@@ -34,8 +34,8 @@ function selectAlgorithmPAACS(networkQualityScore) {
 
   // 2. Base Algorithm Selection from network quality
   let baseAlgorithm = "AES-128";
-  if (networkQualityScore >= 90) baseAlgorithm = "ECC";
-  else if (networkQualityScore >= 75) baseAlgorithm = "AES-256 + RSA";
+  if (networkQualityScore >= 90) baseAlgorithm = "AES-256 + RSA";
+  else if (networkQualityScore >= 75) baseAlgorithm = "ECC";
   else if (networkQualityScore >= 60) baseAlgorithm = "AES-256";
   else if (networkQualityScore >= 40) baseAlgorithm = "ChaCha20";
 

@@ -2,16 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --text-slate-50: 248 250 252;
+  --text-slate-100: 241 245 249;
+  --text-slate-200: 203 213 225;
+  --text-slate-300: 148 163 184;
+  --text-slate-350: 100 116 139;
+  --text-slate-400: 100 116 139;
+  --text-slate-500: 100 116 139;
+  --text-slate-600: 71 85 105;
+  --text-slate-700: 30 41 59;
+  --text-slate-800: 30 64 175;
+  --text-slate-900: 15 23 42;
+  --text-slate-950: 2 6 23;
+
+  --text-blue-200: 191 219 254;
+  --text-blue-300: 147 197 253;
+  --text-blue-400: 96 165 250;
+
+  --bg-gradient-start: #020817;
+  --bg-gradient-end: #0a0f1d;
+  --glass-bg: rgba(15, 23, 42, 0.85);
+  --glass-border-primary: rgba(30, 64, 175, 0.45);
+  --glass-border-secondary: rgba(51, 65, 85, 0.45);
+  --border-slate-800: #1e40af;
+  --border-slate-700: #1e293b;
+  --shadow-intensity: rgba(2, 6, 23, 0.5);
+}
+
+.light {
+  --text-slate-50: 0 0 0;
+  --text-slate-100: 0 0 0;
+  --text-slate-200: 0 0 0;
+  --text-slate-300: 15 23 42;
+  --text-slate-350: 30 41 59;
+  --text-slate-400: 51 65 85;
+  --text-slate-500: 71 85 105;
+  --text-slate-600: 100 116 139;
+  --text-slate-700: 203 213 225;
+  --text-slate-800: 203 213 225;
+  --text-slate-900: 255 255 255;
+  --text-slate-950: 245 247 251;
+
+  --text-blue-200: 30 64 175;
+  --text-blue-300: 30 64 175;
+  --text-blue-400: 29 78 216;
+
+  --bg-gradient-start: #F5F7FB;
+  --bg-gradient-end: #F5F7FB;
+  --glass-bg: #FFFFFF;
+  --glass-border-primary: rgba(37, 99, 235, 0.45);
+  --glass-border-secondary: #D6DEE8;
+  --border-slate-800: #D6DEE8;
+  --border-slate-700: #D6DEE8;
+  --shadow-intensity: rgba(0, 0, 0, 0.05);
+}
+
 body {
   font-family: Inter, system-ui, sans-serif;
-  background: radial-gradient(circle at top, #0f1b38, #020617);
-  color: #e2e8f0;
+  background: radial-gradient(circle at top, var(--bg-gradient-start), var(--bg-gradient-end));
+  color: rgb(var(--text-slate-100));
+  transition: background 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
 }
 
 .glass {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-secondary);
   backdrop-filter: blur(16px);
+  box-shadow: 0 20px 40px -15px var(--shadow-intensity);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass.primary-card {
+  border: 1px solid var(--glass-border-primary);
+  box-shadow: 0 20px 45px -12px rgba(59, 130, 246, 0.15);
+}
+
+.light .glass {
+  border: 1.5px solid var(--glass-border-secondary);
+  box-shadow: 0 25px 50px -12px var(--shadow-intensity);
+}
+
+.light .glass.primary-card {
+  border: 1.5px solid var(--glass-border-primary);
+  box-shadow: 0 25px 55px -10px rgba(37, 99, 235, 0.18);
+}
+
+/* Custom Table hover and transition styles for SOC Dashboard */
+.soc-table-row {
+  transition: background-color 0.2s ease;
+}
+
+.soc-table-row:hover {
+  background-color: #13203a !important;
+}
+
+.light .soc-table-row:hover {
+  background-color: #e2e8f0 !important;
 }
 
 @keyframes fadeIn {
@@ -22,5 +110,14 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
   }
 }

@@ -6,6 +6,7 @@ import ChatBox from "../components/ChatBox";
 import FileUpload from "../components/FileUpload";
 import TransferStabilityCard from "../components/TransferStabilityCard";
 import AlgorithmDecisionCard from "../components/AlgorithmDecisionCard";
+import KpiCards from "../components/KpiCards";
 import socket from "../socket/socket";
 import { AuthContext } from "../context/AuthContext";
 import api from "../services/api";
@@ -106,26 +107,32 @@ export default function ChatPage() {
   return (
     <main className="min-h-screen p-4">
       <Navbar user={user} onLogout={() => { logout(); navigate("/"); }} />
-      <div className="glass mb-4 rounded-2xl p-3 text-sm">
-        Current Network Quality:{" "}
-        <span className="font-semibold capitalize text-blue-300">{network.qos_status || "N/A"}</span>
-      </div>
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <aside className="lg:col-span-4 xl:col-span-3">
-          <NetworkPanel state={network} algorithm={algorithm} />
-          <div className="mt-4">
+      <KpiCards network={network} algorithm={algorithm} />
+      <section className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-140px)]">
+        <aside className="w-full lg:w-[28%] flex-shrink-0 flex flex-col gap-4 overflow-y-auto pr-1">
+          <NetworkPanel state={network} algorithm={algorithm} security={security} />
+          <div>
             <TransferStabilityCard rows={messages} />
           </div>
           <AlgorithmDecisionCard security={security} algorithm={algorithm} />
         </aside>
-        <section className="lg:col-span-8 xl:col-span-9">
+        <section className="w-full lg:w-[72%] flex flex-col h-full relative">
           {integrityAlert && (
             <div className="mb-3 rounded-2xl border-2 border-red-400 bg-red-950/70 p-3 text-sm font-semibold text-red-100 shadow-[0_0_20px_rgba(248,113,113,.35)] animate-pulse">
               ⚠ {integrityAlert}
             </div>
           )}
-          <ChatBox messages={messages} user={user} />
-          <div className="mt-4 flex items-center gap-3">
+          <div className="flex-1 overflow-y-auto mb-4 pb-2">
+            <ChatBox messages={messages} user={user} />
+          </div>
+          <div className="sticky bottom-0 glass rounded-2xl p-2 flex items-center gap-2 border border-slate-700/30 focus-within:ring-2 focus-within:ring-blue-500/40 focus-within:border-blue-500/50 transition-all duration-300 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] light:bg-white z-10">
+            {/* Encryption Icon / Status */}
+            <div className="pl-3 text-slate-400 select-none flex items-center gap-1.5" title="Encrypted Channel Active">
+              <span className="text-sm">🔒</span>
+              <span className="hidden sm:inline text-[9px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded tracking-widest uppercase">Secure</span>
+            </div>
+            
+            {/* Message Input */}
             <input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -136,12 +143,16 @@ export default function ChatPage() {
                 }
               }}
               placeholder="Type secure message..."
-              className="flex-1 rounded-2xl border border-slate-700 bg-slate-900/85 p-4 text-base outline-none transition focus:border-blue-500"
+              className="flex-1 bg-transparent py-2.5 px-2 text-sm md:text-base text-slate-100 placeholder-slate-400 outline-none border-none focus:ring-0 focus:outline-none"
             />
+            
+            {/* Attachment Button */}
             <FileUpload receiver={receiver} onUploaded={(analytics) => setMessages((p) => [analytics, ...p])} />
+            
+            {/* Send Button */}
             <button
               onClick={sendMessage}
-              className="rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold transition hover:bg-blue-500"
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs md:text-sm font-semibold text-white hover:bg-blue-500 shadow-md transition duration-200"
             >
               Send
             </button>
