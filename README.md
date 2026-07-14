@@ -156,13 +156,38 @@ By dynamically adapting cryptographic primitives to match real-time network stat
 
 ---
 
-## 🛠️ Technology Stack
-*   **Backend Server**: Node.js, Express.js, Socket.IO (WebSockets)
-*   **Database**: SQLite via `better-sqlite3` (low-overhead persistence)
-*   **Cryptographic Suite**: Node.js native `crypto` & `node-forge`
-*   **Authentication**: JSON Web Tokens (JWT)
-*   **Frontend Dashboard**: React (Vite), Tailwind CSS, Recharts (live analytics charts), Axios, React Router DOM (v6)
-*   **Simulation Scripting**: Python helper scripts (`simulation/normal.py`, `moderate.py`, `slow.py`, `tamper.py`)
+## 🛠️ Tools and Technology Stack
+
+The project leverages a robust modern stack to coordinate cryptographic processing, socket communication, database logging, and client-side data visualization:
+
+*   **Backend Core**: **Node.js** (V8 JavaScript engine runtime) & **Express.js** (lightweight web application framework) hosting the communication REST API and server logic.
+*   **Real-time Synchronization**: **Socket.IO** (WebSockets wrapper) providing event-driven, low-latency bi-directional synchronization of telemetry, algorithm state updates, and chat messages.
+*   **Database Engine**: **SQLite** managed via **`better-sqlite3`** (high-performance, synchronous database driver) for local storage of message logs, latency telemetry, and keys.
+*   **Cryptographic Library Suite**: 
+    *   **Node.js Native `crypto` Module**: Accesses optimized openSSL ciphers for fast backend-side processing.
+    *   **`node-forge`**: A comprehensive pure JavaScript implementation of cryptographic protocols, utilized for browser-side decryption and key generation compatibility.
+    *   **Algorithms Used**: RSA-1024 (asymmetric hybrid), ECC / ECDH `prime256v1` (elliptic curve key exchange), AES-256-CBC & AES-128-CBC (block ciphers), ChaCha20 (stream cipher), and SHA-256 (integrity hashing).
+*   **Frontend Dashboard**: **React.js** scaffolded via **Vite** for rapid hot-reloads and optimized bundling.
+*   **Data Visualization**: **Recharts** (SVG charts library) creating animated, real-time dashboards mapping latency, bandwidth, stability, and cipher adjustments.
+*   **Styling System**: **Tailwind CSS** implementing a dark-mode first design system with responsive layouts and active transitions.
+*   **Simulation Framework**: **Python 3** interpreter executing offline preset scripts (`simulation/normal.py`, etc.) by writing metric objects directly to the backend cache layer.
+
+---
+
+## 💻 Hardware and Software Requirements
+
+### 1. Software Requirements
+*   **Operating System**: Linux (Ubuntu 20.04+, Debian 11+ recommended), macOS Big Sur+, or Windows 10/11.
+*   **Runtime Environment**: Node.js `v18.0.0` or higher.
+*   **Package Manager**: npm `v9.0.0` or higher.
+*   **Python Interpreter**: Python `v3.8` or higher (optional, only required to execute offline simulation scripts).
+*   **Web Browser**: Any modern browser supporting WebSockets, CSS Grid, and custom variables (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+).
+
+### 2. Hardware Requirements
+*   **Processor (CPU)**: Dual-Core 1.6 GHz or faster x86-64 / ARM64 processor (e.g., Intel Core i3, AMD Ryzen 3, Apple M1).
+*   **System Memory (RAM)**: Minimum 4 GB RAM (8 GB recommended for simultaneous execution of frontend development server, backend server, and drift loops).
+*   **Storage Space**: Minimum 500 MB of free disk/SSD space (primarily for `node_modules` dependencies and SQLite database growth).
+*   **Network Interface**: Standard loopback network adapter (localhost support). Active internet connection is required only for setup and dependency installation.
 
 ---
 
