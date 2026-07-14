@@ -1,51 +1,39 @@
-# Adaptive Secure Communication System (PAACS)
+# Adaptive Secure and Speed Communication System (PAACS)
 
-A research-oriented full-stack demonstration of **dynamic cryptographic algorithm switching** based on real-time network quality, latency correction, and network stability.
-
----
-
-## 🌟 Recent Updates
-
-*   **UI/UX Enhancements:** Included a Light Theme for better accessibility and readability across different environments.
-*   **Analytics & Tables:** Added comprehensive data tables (Transmission Log Table and Analytics Table) to track cryptographic lifecycle logs and telemetry.
-*   **Chat Interface:** Improved chat layout with full-width responsive message alignment.
-*   **General Improvements:** Various under-the-hood stability improvements and bug fixes.
+## 📌 About the Project in Brief
+The **Predictive Adaptive Algorithm Control System (PAACS)** is a research-grade, full-stack demonstration of **dynamic cryptographic algorithm switching**. Built using Node.js, Express, Socket.IO, and React, it dynamically adjusts the active cryptographic suite (varying from high-security hybrid encryption to lightweight symmetric ciphers) based on real-time Network Quality of Service (QoS) telemetry. By constantly evaluating transfer latency, jitter, packet loss, and stability metrics, PAACS preserves communication speed on congested networks while automatically upgrading to maximum security when network quality recovers.
 
 ---
 
-## 📌 Project Objective
+## 📄 Abstract
+In modern computer networking, security and performance often sit at opposite ends of a design trade-off. Standard secure communication protocols (like TLS) employ static cryptographic suites that impose fixed processing and transport overhead, regardless of the network state. Under highly degraded, volatile, or bandwidth-constrained network conditions, these static overheads can lead to transmission bottlenecks, high packet retransmission rates, and channel failures. 
 
-The system demonstrates a core cryptographic-network trade-off:
-> **When network quality degrades, dynamically switching to lighter, faster encryption algorithms maintains communication speed and efficiency, while switching to stronger algorithms under optimal conditions maximizes security.**
+This project introduces PAACS, an adaptive communication system that bridges this gap. It employs a multi-tiered cryptographic suite (comprising AES-128, ChaCha20, AES-256, ECC, and a hybrid AES-256 + RSA scheme) and adjusts the active algorithm in real-time according to live QoS indicators. Through a dual-engine control loop, PAACS calculates a compound network quality score and evaluates a rolling average of transmission times. To prevent performance thrashing on boundary conditions, the system implements a standard-deviation-based Stability Lock and a multi-step Hysteresis filter. Experimental results and live web analytics demonstrate that this adaptive model maintains low transmission latency, guarantees integrity validation (via SHA-256 hashing), and secures the channel with periodic key rotation without interrupting communication.
 
 ---
 
-## 🛠️ Technology Stack
+## ⚠️ Problem Statement
+Standard secure communication protocols operate with static encryption algorithms negotiated at connection startup. This design introduces several vulnerabilities and performance limitations:
+1. **Network Performance Degradation**: Under poor signal strength or congestion (high latency, jitter, and packet loss), heavy cryptographic algorithms (such as RSA hybrid schemes) introduce significant computational and packet size overhead, leading to high transmission failures.
+2. **Channel Starvation**: Constrained IoT, mobile, or edge devices frequently drop connections entirely because they cannot complete heavy handshakes and packet transfers within time limits.
+3. **Rigid Security Posture**: Current protocols lack the intelligence to negotiate security down to keep the channel alive, or conversely, to scale security up to take advantage of high-speed, stable network conditions.
+4. **Thrashing and Jitter Vulnerability**: Standard adaptive solutions often suffer from frequent, erratic algorithm switching at boundary points, adding to the system's processing latency instead of alleviating it.
 
-### Backend
-*   **Runtime & Server:** Node.js, Express.js
-*   **Real-time Communication:** Socket.IO (WebSockets)
-*   **Database:** SQLite via [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3) (for low-overhead persistence)
-*   **Cryptographic Suite:** Node.js native `crypto` & [`node-forge`](https://github.com/digitalbazaar/forge)
-*   **Authentication:** JSON Web Tokens (JWT)
+---
 
-### Frontend
-*   **Framework & Build Tool:** React (Vite)
-*   **Styling:** Tailwind CSS (Vanilla CSS configurations)
-*   **Data Visualization:** Recharts (for live analytics plotting)
-*   **API Client:** Axios
-*   **Routing:** React Router DOM (v6)
-
-### Simulation
-*   **Background Simulation:** Node.js-based continuous network metric drift
-*   **Offline Python Scripts:** Standalone helper scripts (`simulation/normal.py`, `moderate.py`, `slow.py`, `tamper.py`) for offline environment simulation.
+## 🎯 Project Objective
+The key objectives of this project are:
+1. **Dynamic Cryptographic Optimization**: Design a framework that switches cryptographic ciphers adaptively between 5 tiers (ranging from high-overhead hybrid ciphers to lightweight stream ciphers) based on live network quality.
+2. **Latency-Corrective Control Loop**: Develop a rolling-window feedback loop that detects transmission bottlenecks (averaging over the last 10 messages) and adjusts the cryptographic complexity accordingly.
+3. **Thrashing Mitigation (Stability & Hysteresis)**: Implement a standard-deviation-based Stability Lock and a three-step Hysteresis engine to freeze the active algorithm when network jitter is high, ensuring system stability.
+4. **End-to-End Security Assurance**: Ensure message integrity through SHA-256 hash checks, prevent replay and key-compromise attacks via dynamic key rotation (every 5 transmissions), and provide tamper detection.
+5. **Telemetry and Visual Analytics**: Create an interactive dashboard (React, Vite, Recharts, Socket.IO) to visualize real-time network states, algorithm transitions, security risks, and full cryptographic audit trails.
 
 ---
 
 ## 🧠 Methodology & Core Engines
 
-### 1. PAACS (Predictive Adaptive Algorithm Control System)
-The algorithm selector (`backend/services/paacsSelector.js`) dynamically switches the active cryptographic cipher using a multi-stage control loop:
+PAACS uses a multi-tier control loop to evaluate network conditions and dynamically negotiate the optimal cipher:
 
 ```mermaid
 graph TD
@@ -66,148 +54,115 @@ graph TD
     L --> M
 ```
 
-#### A. Cryptographic Suite Mappings
-The system supports 5 distinct cryptographic setups, mapped to network quality levels:
-1.  **AES-256 + RSA (Network Score $\ge$ 90 - "Excellent"):** Hybrid encryption. Symmetric `AES-256-CBC` encrypts the payload, and an RSA public key encrypts the AES key (1024-bit keypair).
-2.  **ECC (Network Score $\ge$ 75 - "Good"):** Ephemeral ECDH keypair generation (`prime256v1`), deriving a shared secret, and using `AES-256-CBC` for symmetric encryption.
-3.  **AES-256 (Network Score $\ge$ 60 - "Moderate"):** Pure symmetric `AES-256-CBC` encryption.
-4.  **ChaCha20 (Network Score $\ge$ 40 - "Weak"):** `chacha20` stream cipher (highly optimized for mobile or CPU-constrained environments).
-5.  **AES-128 (Network Score < 40 - "Poor"):** Symmetric `AES-128-CBC` encryption (minimum overhead).
+### 1. Cryptographic Suite Mappings
+The system supports 5 distinct cryptographic configurations, mapped to network quality score ranges:
+*   **AES-256 + RSA (Score $\ge$ 90 - "Excellent"):** Payload encrypted with symmetric `AES-256-CBC`; the symmetric key is encrypted with an RSA-1024 public key.
+*   **ECC (Score $\ge$ 75 - "Good"):** Ephemeral ECDH keypair generation (`prime256v1`) is used to derive a shared secret, and the payload is encrypted using `AES-256-CBC`.
+*   **AES-256 (Score $\ge$ 60 - "Moderate"):** Pure symmetric block encryption using `AES-256-CBC`.
+*   **ChaCha20 (Score $\ge$ 40 - "Weak"):** Optimized stream cipher (`chacha20`), ideal for mobile and low-power CPU environments.
+*   **AES-128 (Score < 40 - "Poor"):** Pure symmetric block encryption using `AES-128-CBC` (minimum computational overhead).
 
-#### B. Transfer Time Correction Engine
+### 2. Transfer Time Correction Engine
 A rolling database query calculates the average transmission time of the last 10 messages:
-*   **Downgrade Trigger:** If the average transfer time exceeds **300 ms**, PAACS downgrades to a lighter cipher.
-*   **Upgrade Trigger:** If the average transfer time falls below **200 ms**, PAACS upgrades to a stronger cipher (up to the maximum supported by current network conditions).
+*   **Downgrade Trigger**: If the average transfer time exceeds **300 ms**, PAACS immediately shifts to a lighter cipher to bypass network bottlenecks.
+*   **Upgrade Trigger**: If the average transfer time falls below **200 ms**, PAACS upgrades the cipher (up to the maximum supported by current network conditions).
 
-#### C. Stability Controller (Freeze Mechanism)
-If the standard deviation (`stdDev`) of the rolling transfer time exceeds **30 ms**, it indicates highly fluctuating jitter or network instability. PAACS activates a **Stability Lock**, freezing the active algorithm for the next **5 messages** to prevent thrashing (frequent algorithm switches).
+### 3. Stability Controller (Freeze Mechanism)
+To prevent rapid algorithm switching (thrashing) during high-jitter phases, the system calculates the standard deviation (`stdDev`) of the rolling transfer time. If `stdDev > 30 ms`, PAACS activates a **Stability Lock**, freezing the active cipher for the next **5 transmissions**.
 
-#### D. Hysteresis Controller
-To prevent rapid switching back and forth on boundary conditions, a recommended algorithm change must be selected **3 consecutive times** before the system executes the transition.
+### 4. Hysteresis Controller
+To avoid boundary oscillations, any recommended algorithm transition must be selected **3 consecutive times** by the decision loop before the transition is executed.
 
----
-
-### 2. Network Quality Drift Simulator
-The system includes a continuous network simulation engine (`backend/controllers/networkController.js`) running on an interval of **2 seconds**:
-*   **Wave Drift:** The target network quality score continuously drifts in a wave-like cycle between `8` and `96`, moving up or down by `1.5` score units per tick.
-*   **Individual Metric Synthesis:** From this target score, 8 realistic network metrics are derived with added random noise:
-    *   **Latency:** $350 - Q \times 3.4$ ms ($\pm 25$ ms noise)
-    *   **Bandwidth:** $Q \times 0.5$ Mbps ($\pm 4$ Mbps noise)
-    *   **Packet Loss:** $8 - Q \times 0.08$ % ($\pm 1$ % noise)
-    *   **Jitter:** $60 - Q \times 0.58$ ms ($\pm 4$ ms noise)
-    *   **Throughput:** $Q \times 0.45$ Mbps ($\pm 4$ Mbps noise)
-    *   **Connection Stability:** $30 + Q \times 0.69$ % ($\pm 8$ % noise)
-    *   **Response Time:** $500 - Q \times 4.75$ ms ($\pm 35$ ms noise)
-    *   **Error Rate:** $12 - Q \times 0.12$ % ($\pm 1.5$ % noise)
-*   **JSON Persistence:** Saves state dynamically to `backend/network_state.json`.
+### 5. Dynamic Key Rotation & Integrity Verification
+*   **Key Rotation**: All symmetric keys and asymmetric keypairs (RSA/ECC) are automatically regenerated every **5 messages**.
+*   **SHA-256 Integrity Check**: A SHA-256 hash is computed on the ciphertext before transport. If tampering is simulated (by modifying a character in the ciphertext), the receiving node detects a hash mismatch, triggers a UI alert, and flags the message as `[INTEGRITY_CHECK_FAILED]`.
 
 ---
 
-### 3. Dynamic Key Rotation
-*   Symmetric keys, RSA keypairs, and ECC keypairs are automatically regenerated after every **5 transmissions**.
-*   Each rotation increments the `key_id`, logs the event in the `encryption_keys` SQLite table, and emits a `key_rotation` event via WebSockets to synchronize client-side logs.
+## 📐 Architecture Diagram
 
----
+Below is the system architecture showing the relationship between the client interface, socket communication, backend control loop, SQLite database, and the environment simulator:
 
-### 4. SHA-256 Integrity & Tampering Simulation
-*   A SHA-256 hash is computed from the encrypted ciphertext before transport.
-*   **Tamper Injection:** Hitting the `/simulate/tamper` endpoint arms a tamper flag. The next message sent will have its ciphertext string modified (a character flipped mid-string).
-*   **Tamper Detection:** The receiving side computes the hash of the incoming ciphertext and compares it with the sent hash. A mismatch flags the message as `[INTEGRITY_CHECK_FAILED]`, broadcasts an alert, and renders a red tamper banner on the UI.
+```mermaid
+graph TB
+    subgraph Client-Side (Frontend React SPA)
+        Dashboard["Dashboard & Chat Interface"]
+        Recharts["Recharts Visualization Engine"]
+        CryptoClient["Crypto & Decryption Layer (node-forge)"]
+    end
 
----
+    subgraph Transport / Real-Time Sync
+        WebSockets["Socket.IO (Bi-directional Telemetry & Messages)"]
+        REST["REST API (Auth, Logs, Simulation Control)"]
+    end
 
-## 🗄️ Database Architecture
+    subgraph Server-Side (Backend Node/Express)
+        Server["Express.js Server"]
+        PAACS["PAACS Controller (paacsSelector.js)"]
+        CryptoServer["Crypto & Encryption Layer (node-forge / native crypto)"]
+        Simulator["Network Drift Simulator (2s wave cycle)"]
+    end
 
-The SQLite database is located at `backend/database/communication.db`. It contains two primary tables:
+    subgraph Persistence Layer
+        SQLite[("SQLite DB (communication.db)")]
+        StateJSON["network_state.json"]
+    end
 
-### 1. `messages` Table
-Stores telemetry and metrics for every single message and file transmission:
-*   `sender` / `receiver`: Identifying the endpoints.
-*   `message`: Plaintext content (or file meta).
-*   `file_name` / `file_size`: Handles file attachment context.
-*   `encryption_algorithm`: The cipher selected by PAACS for this message.
-*   `encryption_time_ms`, `transfer_time_ms`, `decryption_time_ms`, `total_processing_time_ms`: Precision benchmarking timers.
-*   `latency_ms`, `bandwidth_mbps`, `packet_loss_percent`, `network_mode`, `network_quality_score`: Network conditions during the transfer.
-*   `stability_score`, `transfer_std_deviation`: Analytics from the PAACS control loop.
-*   `message_hash`, `integrity_status`: For verification.
-*   `key_id`: References the rotated key index.
-*   `security_score`, `risk_level`: Custom safety indicators.
-*   `cpu_usage`, `attack_risk`, `algorithm_reason`: Contextual metrics.
-*   `sent_message`, `encrypted_message_sent`, `encrypted_message_received`, `decrypted_message`: Full plaintext-to-ciphertext lifecycle audit trails.
-
-### 2. `encryption_keys` Table
-Logs key rotation events for auditing:
-*   `key_id`: The rotated key identifier.
-*   `algorithm`: Target algorithm (marked as `ALL` due to full rotation).
-*   `created_at`: Datetime string.
-*   `rotation_reason`: Rotation trigger details.
-
----
-
-## 🖥️ Web Dashboard & UI Pages
-
-### 1. Login Page (`/`)
-*   JWT authentication interface.
-*   Pre-seeded credentials:
-    *   `device1 / password1`
-    *   `device2 / password2`
-
-### 2. Live Chat Workspace (`/chat`)
-*   **Real-time Messaging:** Chat feed with file upload utility.
-*   **Live Network Panel:** Displays live QoS telemetry (latency, bandwidth, loss, jitter, connection stability, throughput, response time, error rate), quality score, and a moving line-graph visualizing the wave drift.
-*   **Algorithm Decision Card:** Displays the current active cipher, stability lock details, and the clear textual logic reason provided by PAACS.
-*   **Security Score Card:** Displays security ratings (Low, Medium, High risk) and performance parameters.
-*   **Integrity Alerts:** Top banner warnings when tampered packets fail decryption.
-
-### 3. Analytics Dashboard (`/analytics`)
-Visualizes telemetry records from SQLite using Recharts:
-*   **Transfer Time Timeline:** Compares encryption, transfer delay, and decryption processing times.
-*   **QoS vs. Algorithm:** Visualizes the dynamic switching boundaries between the 5 ciphers.
-*   **Security Score vs. Time:** Tracks historical safety score metrics.
-
-### 4. Cryptographic Lifecycle Log (`/transmission-log`)
-A detailed, tabular grid visualizing the raw cryptographic audit trail. Ideal for researchers, it displays:
-*   Sender / Receiver.
-*   Original message plaintext.
-*   Pre-transfer SHA-256 hash.
-*   The exact encrypted ciphertext sent by the client.
-*   The ciphertext received (highlighting differences with green `✓ Intact` or red `⚠ Tampered` badges).
-*   The final decrypted output.
-
----
-
-## 📡 Simulation & Control API
-
-All simulation REST routes are public (no authentication headers needed) for demonstration scripting:
-
-### 1. Trigger Network Presets
-Manually force the simulated network quality to a preset quality score anchor (the JavaScript drift loop will continue to fluctuate around this new anchor):
-*   **Excellent Network:**
-    ```bash
-    curl -X POST http://localhost:5000/simulate/excellent
-    ```
-*   **Good Network:**
-    ```bash
-    curl -X POST http://localhost:5000/simulate/good
-    ```
-*   **Moderate Network:**
-    ```bash
-    curl -X POST http://localhost:5000/simulate/moderate
-    ```
-*   **Weak Network:**
-    ```bash
-    curl -X POST http://localhost:5000/simulate/weak
-    ```
-*   **Poor Network:**
-    ```bash
-    curl -X POST http://localhost:5000/simulate/poor
-    ```
-
-### 2. Inject Packet Tampering
-Arm the tamper simulation. The next single message or file transfer will fail integrity checks:
-```bash
-curl -X POST http://localhost:5000/simulate/tamper
+    %% Connections
+    Dashboard --> CryptoClient
+    Dashboard --> Recharts
+    CryptoClient <--> WebSockets <--> Server
+    Dashboard <--> REST <--> Server
+    
+    Server --> PAACS
+    Server --> CryptoServer
+    Server --> Simulator
+    
+    PAACS <--> SQLite
+    Simulator --> StateJSON
+    Server <--> StateJSON
 ```
+
+### Architectural Flow Description
+1. **Network Drift**: The Network Drift Simulator continuously calculates drifting network quality (wave cycle) and writes the QoS metrics to `network_state.json`.
+2. **Message Send**: When a user sends a message from the React Dashboard, the payload is routed to the Backend Server.
+3. **Algorithm Negotiation**: The server queries `network_state.json` and evaluates past telemetry in the SQLite database to run the PAACS decision loop.
+4. **Encryption**: The server encrypts the payload using the selected algorithm, generates the SHA-256 hash, and increments key rotations if necessary.
+5. **Real-time Delivery**: The encrypted payload is delivered to the client via Socket.IO.
+6. **Decryption and Log**: The client decrypts the payload, verifies the SHA-256 hash, and updates both the Chat feed and the Recharts telemetry graphs.
+
+---
+
+## 🏆 Innovative Components (5 Points)
+1. **QoS-to-Cryptographic Mapping**: Translates raw network quality indicators (latency, bandwidth, loss, jitter, connection stability, throughput, response time, error rate) into an actionable 5-tier cryptographic scale, maximizing security according to ambient channel capacity.
+2. **Dual-Engine Active Telemetry Feedback**: Combines static network-state threshold mappings with a dynamic feedback loop that measures the actual rolling transfer times of the last 10 messages, allowing the system to correct itself under localized server load or link issues.
+3. **Standard-Deviation-Based Stability Lock**: Intelligently detects jitter volatility. When variance in transfer time exceeds a threshold (30ms), it freezes the active algorithm for 5 messages, avoiding the CPU and network overhead of frequent cryptographic re-negotiation.
+4. **Stateful Hysteresis Debouncer**: Implements a transition delay requiring three consecutive matching recommendations before executing a cipher switch. This mitigates oscillatory algorithm switching at boundary threshold conditions.
+5. **Automated Cryptographic Auditing & Tamper Suite**: Employs live key rotation (every 5 packets) synced across sockets and integrates an automated tampering API that modifies ciphertexts mid-transit to test and visually display integrity check failures in real-time.
+
+---
+
+## 🏁 Conclusion
+By dynamically adapting cryptographic primitives to match real-time network states, PAACS demonstrates a highly resilient approach to secure communication. The system successfully avoids channel failures and bottlenecks on degraded networks by switching to lightweight stream ciphers (ChaCha20, AES-128). Conversely, it maximizes confidentiality on stable networks by upgrading to robust hybrid systems (AES-256 + RSA). Ultimately, this project proves that security does not need to be disabled under poor network conditions; instead, it can be dynamically and safely optimized.
+
+---
+
+## 🔮 Future Scope
+1. **Machine Learning Network Prediction**: Integrate an LSTM (Long Short-Term Memory) network to predict upcoming signal drops or bandwidth spikes based on historical trends, preemptively switching algorithms before latency spikes occur.
+2. **Post-Quantum Cryptography (PQC)**: Add next-generation quantum-resistant algorithms (such as Crystals-Kyber or Crystals-Dilithium) to the adaptive cryptographic suite.
+3. **Dynamic Packet Fragmentation**: Adapt MTU (Maximum Transmission Unit) sizes along with the algorithm selection to optimize throughput on extremely high-loss channels.
+4. **Decentralized Multi-Party Key Exchanges**: Implement decentralized key-rotation mechanisms to distribute trust across multiple validation nodes.
+5. **Kernel/OS Protocol Integration**: Port the PAACS control loop into the transport layer (e.g., as a custom QUIC protocol extension or dynamic VPN driver) for native operating system support.
+
+---
+
+## 🛠️ Technology Stack
+*   **Backend Server**: Node.js, Express.js, Socket.IO (WebSockets)
+*   **Database**: SQLite via `better-sqlite3` (low-overhead persistence)
+*   **Cryptographic Suite**: Node.js native `crypto` & `node-forge`
+*   **Authentication**: JSON Web Tokens (JWT)
+*   **Frontend Dashboard**: React (Vite), Tailwind CSS, Recharts (live analytics charts), Axios, React Router DOM (v6)
+*   **Simulation Scripting**: Python helper scripts (`simulation/normal.py`, `moderate.py`, `slow.py`, `tamper.py`)
 
 ---
 
@@ -218,34 +173,43 @@ curl -X POST http://localhost:5000/simulate/tamper
 *   npm (v9+)
 
 ### Setup Backend
-1.  Navigate to the backend directory:
-    ```bash
-    cd backend
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Configure variables (optional - default port is 5000):
-    ```bash
-    cp .env.example .env
-    ```
-4.  Start development server:
-    ```bash
-    npm run dev
-    ```
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Configure environment variables (optional - default port is 5000):
+   ```bash
+   cp .env.example .env
+   ```
+4. Start the backend development server:
+   ```bash
+   npm run dev
+   ```
 
 ### Setup Frontend
-1.  Navigate to the frontend directory:
-    ```bash
-    cd frontend
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Start dev environment:
-    ```bash
-    npm run dev
-    ```
-4.  Open `http://localhost:5173` in your web browser.
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite dev server:
+   ```bash
+   npm run dev
+   ```
+4. Open [http://localhost:5173](http://localhost:5173) in your web browser.
+
+### Interactive Simulation Commands
+All simulation REST routes are public for easy scripting:
+*   **Excellent Network**: `curl -X POST http://localhost:5000/simulate/excellent`
+*   **Good Network**: `curl -X POST http://localhost:5000/simulate/good`
+*   **Moderate Network**: `curl -X POST http://localhost:5000/simulate/moderate`
+*   **Weak Network**: `curl -X POST http://localhost:5000/simulate/weak`
+*   **Poor Network**: `curl -X POST http://localhost:5000/simulate/poor`
+*   **Inject Ciphertext Tampering**: `curl -X POST http://localhost:5000/simulate/tamper`
