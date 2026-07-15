@@ -1,0 +1,2 @@
+These are some sample notes for the PAACS adaptive security transmission simulation.
+Encryption strength varies based on network QoS.

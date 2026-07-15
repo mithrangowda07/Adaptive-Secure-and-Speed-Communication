@@ -1,0 +1,3 @@
+timestamp,latency,bandwidth,packet_loss
+1784048903,45,12.5,0.2
+1784048933,90,5.1,1.5

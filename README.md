@@ -85,25 +85,25 @@ Below is the system architecture showing the relationship between the client int
 
 ```mermaid
 graph TB
-    subgraph Client-Side (Frontend React SPA)
+    subgraph ClientSide ["Client-Side (Frontend React SPA)"]
         Dashboard["Dashboard & Chat Interface"]
         Recharts["Recharts Visualization Engine"]
         CryptoClient["Crypto & Decryption Layer (node-forge)"]
     end
 
-    subgraph Transport / Real-Time Sync
+    subgraph TransportSync ["Transport / Real-Time Sync"]
         WebSockets["Socket.IO (Bi-directional Telemetry & Messages)"]
         REST["REST API (Auth, Logs, Simulation Control)"]
     end
 
-    subgraph Server-Side (Backend Node/Express)
+    subgraph ServerSide ["Server-Side (Backend Node/Express)"]
         Server["Express.js Server"]
         PAACS["PAACS Controller (paacsSelector.js)"]
         CryptoServer["Crypto & Encryption Layer (node-forge / native crypto)"]
         Simulator["Network Drift Simulator (2s wave cycle)"]
     end
 
-    subgraph Persistence Layer
+    subgraph Persistence ["Persistence Layer"]
         SQLite[("SQLite DB (communication.db)")]
         StateJSON["network_state.json"]
     end
